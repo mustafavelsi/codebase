@@ -1,0 +1,17 @@
+name: Trigger Jenkins Job
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  trigger-jenkins:
+    runs-on: self-hosted
+    steps:
+      - name: Trigger Jenkins Build
+        run: |
+          curl -X POST "http://10.30.11.13:8080/job/your-job-name/build?token=your-token"
+      env:
+        JENKINS_USER: ${{ secrets.JENKINS_USER }}
+        JENKINS_TOKEN: ${{ secrets.JENKINS_TOKEN }}
