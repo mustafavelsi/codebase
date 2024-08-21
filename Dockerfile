@@ -3,8 +3,8 @@ FROM rockylinux:9
 
 # Install necessary packages: Nginx, PHP-FPM, and PHP extensions
 #RUN dnf install -y epel-release && \
-RUN dnf install -y nginx php php-fpm php-cli php-mysqlnd php-xml php-gd php-mbstring && \
-RUN dnf clean all
+RUN dnf install -y nginx php php-fpm php-cli php-mysqlnd php-xml php-gd php-mbstring
+# RUN dnf clean all
 
 # Copy application files to the container
 COPY . /var/www/html/
