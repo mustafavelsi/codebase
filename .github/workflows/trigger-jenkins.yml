@@ -11,7 +11,7 @@ jobs:
     steps:
       - name: Trigger Jenkins Build
         run: |
-          curl -X POST "http://10.30.11.13:8080/job/your-job-name/build?token=your-token"
+          curl -X POST "http://10.30.11.13:8080/job/irtaza/build?token=your-token"
       env:
         JENKINS_USER: ${{ secrets.JENKINS_USER }}
         JENKINS_TOKEN: ${{ secrets.JENKINS_TOKEN }}
