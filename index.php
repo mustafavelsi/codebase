@@ -1,2 +1,2 @@
 <?php
-echo "My name is Irtaza";
+echo "My name is Ali Mujatba";
