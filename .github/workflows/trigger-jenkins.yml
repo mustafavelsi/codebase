@@ -1,3 +1,8 @@
+- name: Debug Jenkins Variables
+  run: |
+    echo "JENKINS_USER=$JENKINS_USER"
+    echo "JENKINS_TOKEN=$JENKINS_TOKEN"
+
 name: Trigger Jenkins Job
 
 on:
