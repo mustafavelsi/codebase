@@ -1,47 +1,81 @@
-# Use Rocky Linux 9 as the base image
-FROM rockylinux:9
+# Use the official Rocky Linux 8 base image as an alternative to CentOS 8
+FROM rockylinux:8
 
-# Install necessary packages: Nginx, PHP-FPM, and PHP extensions
-#RUN dnf install -y epel-release && \
-RUN dnf install -y nginx php php-fpm php-cli php-mysqlnd php-xml php-gd php-mbstring
-# RUN dnf clean all
+# Install EPEL repository
+#RUN dnf install -y epel-release
 
-# Copy application files to the container
-COPY . /var/www/html/
+# Install NGINX
+RUN dnf install -y nginx
 
-# Set the working directory
-WORKDIR /var/www/html/
+# Install PHP and PHP-FPM
+RUN dnf install -y php php-fpm php-mysqlnd php-cli php-json php-opcache php-xml php-gd php-mbstring php-zip php-devel php-intl
 
-# Ensure the correct permissions
-RUN chown -R nginx:nginx /var/www/html
+# Configure PHP-FPM to use nginx user and group
+RUN sed -i 's/user = apache/user = nginx/' /etc/php-fpm.d/www.conf \
+    && sed -i 's/group = apache/group = nginx/' /etc/php-fpm.d/www.conf
 
-# Configure PHP-FPM to listen on a Unix socket
-RUN sed -i 's/listen = 127.0.0.1:9000/listen = \/run\/php-fpm.sock/' /etc/php-fpm.d/www.conf && \
-    sed -i 's/;cgi.fix_pathinfo=1/cgi.fix_pathinfo=0/' /etc/php.ini
-
-# Configure Nginx to use PHP-FPM
+# Create NGINX server block configuration
 RUN echo 'server { \
-    listen 80; \
-    server_name localhost; \
-    root /var/www/html; \
-    index index.php index.html index.htm; \
+    listen       80; \
+    server_name  localhost; \
+    root         /usr/share/nginx/html; \
+    index        index.php index.html index.htm; \
     location / { \
         try_files $uri $uri/ =404; \
     } \
     location ~ \.php$ { \
-        include fastcgi_params; \
-        fastcgi_pass unix:/run/php-fpm.sock; \
-        fastcgi_index index.php; \
-        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name; \
-        include fastcgi_params; \
+        try_files $uri =404; \
+        fastcgi_pass   unix:/run/php-fpm/www.sock; \
+        fastcgi_index  index.php; \
+        fastcgi_param  SCRIPT_FILENAME $document_root$fastcgi_script_name; \
+        include        fastcgi_params; \
     } \
     location ~ /\.ht { \
-        deny all; \
+        deny  all; \
     } \
 }' > /etc/nginx/conf.d/default.conf
+
+
+# Create test PHP file
+RUN echo "<?php phpinfo(); ?>" > /usr/share/nginx/html/info.php
+
+COPY . /usr/share/nginx/html/
+
+
+# Set correct permissions and SELinux context on /usr/share/nginx/html
+RUN chown -R nginx:nginx /usr/share/nginx/html 
+RUN chmod -R 755 /usr/share/nginx/html
+#    && chcon -R -t httpd_sys_content_t /usr/share/nginx/html || true
+
+
+# Copy the startup script
+COPY start_services.sh /usr/local/bin/start_services.sh
+
+# Make the script executable
+RUN chmod +x /usr/local/bin/start_services.sh
+
+# Ensure the directory for the socket exists
+RUN mkdir -p /run/php-fpm
+RUN chown nginx:nginx /run/php-fpm
+RUN chmod 755 /run/php-fpm
+
+
 
 # Expose port 80
 EXPOSE 80
 
-# Start Nginx and PHP-FPM services
-CMD ["sh", "-c", "php-fpm -D && nginx -g 'daemon off;'"]
+
+# Start NGINX and PHP-FPM services
+
+# CMD ["sh", "-c", "php-fpm -D && nginx -g 'daemon off;'"]
+
+#CMD ["php-fpm -D && nginx -g 'daemon off;'"]
+
+#CMD ["nginx", "-g", "daemon off;"]
+
+# Use the startup script as the entry point
+#CMD ["/usr/local/bin/start_services.sh"]
+
+
+# Use the startup script as the entry point
+ENTRYPOINT ["/usr/local/bin/start_services.sh"]
